@@ -1,0 +1,33 @@
+groups:
+  - id: registry.test
+    prefix: test
+    type: attribute_group
+    name: Test Namespace
+    brief: >
+      This is a test namespace.
+    attributes:
+      - id: attribute.a
+        type: string
+        stability: experimental
+        brief: >
+          Test attribute A.
+        examples: 'a'
+      - id: attribute.b
+        type: string
+        stability: stable
+        brief: >
+          Test attribute B.
+        examples: 'b'  
+  - id: registry.test.specific
+    prefix: test
+    type: attribute_group
+    name: Specific Test Namespace
+    brief: >
+      This is a specific test namespace.
+    attributes:
+      - id: attribute.c
+        type: string
+        stability: experimental
+        brief: >
+          Test attribute C.
+        examples: 'c'

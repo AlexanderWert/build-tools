@@ -24,6 +24,7 @@ class MarkdownOptions:
     disable_deprecated_badge: bool = False
     break_count: int = 50
     exclude_files: List[str] = field(default_factory=list)
+    registry_root: str = ""
 
     def stable_md_snippet(self):
         if self.disable_stable_badge:

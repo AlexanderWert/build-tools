@@ -1,0 +1,15 @@
+groups:
+  - id: registry.test.deprecated
+    prefix: test
+    type: attribute_group
+    name: Test Namespace
+    brief: >
+      This is a test namespace.
+    attributes:
+      - id: attribute.d
+        type: string
+        stability: experimental
+        brief: >
+          Test attribute D.
+        examples: 'd'
+        deprecated: "Replaced by `test.attribute.c`."

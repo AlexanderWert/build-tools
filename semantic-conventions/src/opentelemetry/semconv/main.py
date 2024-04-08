@@ -103,6 +103,7 @@ def process_markdown(semconv, args):
         disable_deprecated_badge=args.md_disable_deprecated_badge,
         break_count=args.md_break_conditional,
         exclude_files=exclude_file_list(args.markdown_root, args.exclude),
+        registry_root=args.md_registry_root,
     )
     md_renderer = MarkdownRenderer(args.markdown_root, semconv, options)
     md_renderer.render_md()
@@ -249,6 +250,13 @@ def add_md_parser(subparsers):
         required=False,
         default=False,
         action="store_true",
+    )
+    parser.add_argument(
+        "--md-registry-root",
+        "-rr",
+        help="Specifies where to generate markdown files for the attributes registry.",
+        required=False,
+        type=str,
     )
 
 

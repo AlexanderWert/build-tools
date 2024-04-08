@@ -94,6 +94,10 @@ class MarkdownRenderer:
         self.options = options
         self.render_ctx = RenderContext()
         self.semconvset = semconvset
+
+        if self.options.registry_root:
+            self._generate_registry_markdown_files()
+
         # We load all markdown files to render
         self.file_names = sorted(
             set(glob.glob(f"{md_folder}/**/*.md", recursive=True))
@@ -438,6 +442,87 @@ class MarkdownRenderer:
                     for attr in valid_attr:
                         m[attr.fqn] = md
         return m
+
+    def _generate_registry_markdown_files(self):
+        """
+        This method generates markdown template files for the attributes registry.
+        """
+
+        registry_groups: {
+            typing.Dict[str, typing.Dict[str, BaseSemanticConvention]]
+        } = {}
+        for key, group in self.semconvset.models.items():
+            if key.startswith("registry"):
+                root_ns = group.prefix.split(".")[0]
+                if root_ns not in registry_groups:
+                    registry_groups[root_ns] = {}
+                registry_groups[root_ns][key] = group
+        root_namespaces = []
+        for root_namespace, semconv_entry in registry_groups.items():
+            with open(
+                f"{self.options.registry_root}/{root_namespace}.md", "w"
+            ) as reg_file:
+                output = io.StringIO()
+                self._render_registry_md_file(root_namespace, semconv_entry, output)
+                reg_file.write(output.getvalue())
+
+            root_namespaces.append(root_namespace)
+
+        self._update_registry_namespace_overview(sorted(root_namespaces))
+
+    def _render_registry_md_file(self, root_namespace, semconv_entry, output):
+        output.write(
+            f"<!--- Hugo front matter used to generate the website version of this page:\n"
+            f"linkTitle: {root_namespace}\n"
+            f"--->\n\n"
+            f"# Attributes in the `{root_namespace}` namespace\n"
+        )
+
+        if len(semconv_entry) > 1:
+            output.write("\n<!-- toc -->\n" "<!-- tocstop -->\n")
+
+        for semconv_id, semconv in sorted(
+            semconv_entry.items(), key=lambda x: 1 if x[0].endswith("deprecated") else 0
+        ):
+            group_title = semconv.name or " ".join(semconv_id.split(".")[1:])
+            deprecated_prefix = (
+                "Deprecated " if semconv_id.endswith("deprecated") else ""
+            )
+            group_title = f"{deprecated_prefix}{group_title}"
+            output.write(
+                f"\n## {group_title} Attributes\n\n"
+                f"<!-- semconv {semconv_id}(omit_requirement_level) -->\n"
+                f"<!-- endsemconv -->\n"
+            )
+
+    def _update_registry_namespace_overview(self, root_namespaces):
+        """
+        This method updates the root namespaces overview in markdown files wrapped in
+        <!-- registry_namespaces_start -->
+        <!-- registry_namespaces_end -->
+        comments.
+        """
+        readme = f"{self.options.registry_root}/README.md"
+        if not os.path.exists(readme):
+            return
+
+        with open(readme, "r") as file:
+            filedata = file.read()
+
+        ns_overview = "<!-- registry_namespaces_start -->\n"
+        for ns in root_namespaces:
+            ns_overview += f"* [`{ns}`]({ns}.md)\n"
+        ns_overview += "<!-- registry_namespaces_end -->"
+
+        filedata = re.sub(
+            r"<!-- registry_namespaces_start -->(.*)<!-- registry_namespaces_end -->",
+            ns_overview,
+            filedata,
+            flags=re.S,
+        )
+
+        with open(readme, "w") as file:
+            file.write(filedata)
 
     def _parse_semconv_selector(self, selector: str):
         semconv_id = selector

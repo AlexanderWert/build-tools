@@ -76,6 +76,15 @@ def parse_semantic_convention_groups(yaml_file, validation_ctx):
 def SemanticConvention(group, validation_ctx):
     type_value = group.get("type")
     semconv_id = group.get("id")
+
+    if (
+        semconv_id is not None
+        and semconv_id.startswith("registry.")
+        and not group.get("name")
+    ):
+        msg = f"No 'name' property defined for the registry attributes group: `{semconv_id}`"
+        validation_ctx.raise_or_warn(group.lc.data["id"], msg, semconv_id)
+
     if type_value is None:
         line = group.lc.data["id"][0] + 1
         doc_url = "https://github.com/open-telemetry/build-tools/blob/main/semantic-conventions/syntax.md#groups"
@@ -103,6 +112,7 @@ class BaseSemanticConvention(ValidatableYamlNode):
 
     allowed_keys: Tuple[str, ...] = (
         "id",
+        "name",
         "type",
         "brief",
         "note",
@@ -152,6 +162,7 @@ class BaseSemanticConvention(ValidatableYamlNode):
 
         self.semconv_id = self.id
         self.note = group.get("note", "").strip()
+        self.name = group.get("name", "").strip()
         self.prefix = group.get("prefix", "").strip()
         self.validation_ctx = validation_ctx
         position_data = group.lc.data

@@ -166,6 +166,37 @@ class TestCorrectMarkdown(unittest.TestCase):
     def test_sorting(self):
         self.check("markdown/sorting/")
 
+    def test_registry_md_rendering(self) -> Optional[BaseException]:
+        dirpath = Path(self.get_file_path("markdown/registry_generation"))
+        expected_name = "expected.md"
+        options = MarkdownOptions(
+            disable_experimental_badge=True,
+            disable_deprecated_badge=True,
+            disable_stable_badge=True,
+        )
+        if not dirpath.is_dir():
+            raise ValueError(
+                "Input dir does not exist (or is not a dir): " + str(dirpath)
+            )
+        semconv = SemanticConventionSet(debug=True)
+        for fname in dirpath.glob("**/*.yaml"):
+            print("Parsing", fname)
+            semconv.parse(fname)
+
+        semconv.finish()
+
+        output = io.StringIO()
+
+        def do_render():
+            renderer = MarkdownRenderer(str(dirpath), semconv, options)
+            renderer._render_registry_md_file("test", semconv.models, output)
+
+        do_render()
+        result = output.getvalue()
+        print(result)
+        assert result == (dirpath / expected_name).read_text(encoding="utf-8")
+        return None
+
     def testVisualDiffer(self):
         with open(
             self.get_file_path("markdown/table_generation_conflict/input-1.md"),
